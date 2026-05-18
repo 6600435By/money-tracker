@@ -8,6 +8,8 @@ import GoogleSignInButton from '@/components/auth/google-sign-in-button'
 import AuthDivider from '@/components/auth/auth-divider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 function getInitialError(searchParams: URLSearchParams): string | null {
@@ -36,26 +38,30 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md shadow-sm">
       <CardHeader>
-        <CardTitle>Вход</CardTitle>
+        <CardTitle className="text-2xl font-semibold tracking-tight">Вход</CardTitle>
         <CardDescription>Войдите в Money Tracker</CardDescription>
       </CardHeader>
       <CardContent>
         <GoogleSignInButton />
         <AuthDivider />
         <form action={handleSubmit} className="space-y-4">
-          <FormField label="Email">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
             <Input
+              id="email"
               name="email"
               type="email"
               required
               placeholder="you@example.com"
               autoComplete="email"
             />
-          </FormField>
-          <FormField label="Пароль">
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Пароль</Label>
             <Input
+              id="password"
               name="password"
               type="password"
               required
@@ -63,38 +69,23 @@ export default function LoginForm() {
               placeholder="••••••••"
               autoComplete="current-password"
             />
-          </FormField>
+          </div>
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Вход…' : 'Войти'}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           Нет аккаунта?{' '}
-          <Link href="/auth/register" className="text-blue-600 hover:underline">
+          <Link href="/auth/register" className="text-primary hover:underline">
             Зарегистрироваться
           </Link>
         </p>
       </CardContent>
     </Card>
-  )
-}
-
-function FormField({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      {children}
-    </div>
   )
 }

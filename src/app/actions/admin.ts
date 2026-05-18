@@ -28,6 +28,13 @@ async function verifyAdmin(): Promise<{ userId: string; profile: Profile }> {
   return { userId: user.id, profile: profile as Profile }
 }
 
+export interface AdminStats {
+  total: number
+  active: number
+  blocked: number
+  admins: number
+}
+
 export async function getUsers(): Promise<Profile[]> {
   await verifyAdmin()
 
@@ -39,6 +46,11 @@ export async function getUsers(): Promise<Profile[]> {
 
   if (error) {
     console.error('getUsers error:', error)
+    if (error.message.includes('profiles') || error.code === '42P01') {
+      throw new Error(
+        'Таблица profiles не найдена. Выполните .taskmaster/database-migration-auth.sql в Supabase.'
+      )
+    }
     throw new Error('Не удалось загрузить пользователей')
   }
 

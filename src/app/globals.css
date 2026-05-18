@@ -1,58 +1,119 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Apple-inspired design tokens.
+ *
+ * Tailwind 4 reads colours from @theme as --color-*.
+ * The :root block keeps hsl() vars for any legacy hsl(var(--*)) references.
+ */
+
+/* ── Tailwind 4 theme ── */
+@theme inline {
+  /* Apple system font stack */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+
+  /* Backgrounds */
+  --color-background:             hsl(0 0% 100%);
+  --color-foreground:             hsl(0 0% 7%);
+
+  --color-card:                   hsl(0 0% 100%);
+  --color-card-foreground:        hsl(0 0% 7%);
+
+  --color-popover:                hsl(0 0% 100%);
+  --color-popover-foreground:     hsl(0 0% 7%);
+
+  /* Apple blue #0077ED */
+  --color-primary:                hsl(211 100% 46%);
+  --color-primary-foreground:     hsl(0 0% 100%);
+
+  --color-secondary:              hsl(0 0% 96%);
+  --color-secondary-foreground:   hsl(0 0% 7%);
+
+  --color-muted:                  hsl(0 0% 96%);
+  --color-muted-foreground:       hsl(0 0% 45%);
+
+  --color-accent:                 hsl(0 0% 96%);
+  --color-accent-foreground:      hsl(0 0% 7%);
+
+  --color-destructive:            hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+
+  --color-border:                 hsl(0 0% 90%);
+  --color-input:                  hsl(0 0% 90%);
+  --color-ring:                   hsl(211 100% 46%);
+
+  /* Apple 12px radius */
+  --radius:    0.75rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* ── Legacy hsl(var(--*)) vars for tailwind.config.js ── */
+:root {
+  --background:        0 0% 100%;
+  --foreground:        0 0% 7%;
+  --card:              0 0% 100%;
+  --card-foreground:   0 0% 7%;
+  --popover:           0 0% 100%;
+  --popover-foreground: 0 0% 7%;
+  --primary:           211 100% 46%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:         0 0% 96%;
+  --secondary-foreground: 0 0% 7%;
+  --muted:             0 0% 96%;
+  --muted-foreground:  0 0% 45%;
+  --accent:            0 0% 96%;
+  --accent-foreground: 0 0% 7%;
+  --destructive:       0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border:            0 0% 90%;
+  --input:             0 0% 90%;
+  --ring:              211 100% 46%;
+  --radius:            0.75rem;
+}
+
+.dark {
+  --background:        0 0% 7%;
+  --foreground:        0 0% 98%;
+  --card:              0 0% 10%;
+  --card-foreground:   0 0% 98%;
+  --popover:           0 0% 10%;
+  --popover-foreground: 0 0% 98%;
+  --primary:           211 100% 46%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:         0 0% 14%;
+  --secondary-foreground: 0 0% 98%;
+  --muted:             0 0% 14%;
+  --muted-foreground:  0 0% 63%;
+  --accent:            0 0% 14%;
+  --accent-foreground: 0 0% 98%;
+  --destructive:       0 62% 30%;
+  --destructive-foreground: 0 0% 98%;
+  --border:            0 0% 18%;
+  --input:             0 0% 18%;
+  --ring:              211 100% 46%;
+}
+
+/* ── Base styles ── */
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+  * {
+    @apply border-border outline-ring/50;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
   }
 }
 
-@layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
+/* ── Tabular numbers for financial figures ── */
+.text-balance-display {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }

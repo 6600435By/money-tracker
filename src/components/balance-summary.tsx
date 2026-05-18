@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Transaction } from '@/lib/types'
+import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 
 interface BalanceSummaryProps {
   transactions: Transaction[]
@@ -39,10 +40,10 @@ export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Доходы за месяц</CardTitle>
-          <div className="h-4 w-4 text-green-600">📈</div>
+          <TrendingUp className="h-4 w-4 text-emerald-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-emerald-600 text-balance-display">
             {formatAmount(income)}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -54,10 +55,10 @@ export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Расходы за месяц</CardTitle>
-          <div className="h-4 w-4 text-red-600">📉</div>
+          <TrendingDown className="h-4 w-4 text-rose-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">
+          <div className="text-2xl font-bold text-rose-600 text-balance-display">
             {formatAmount(expenses)}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -69,10 +70,10 @@ export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Баланс</CardTitle>
-          <div className="h-4 w-4 text-blue-600">💰</div>
+          <Wallet className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-primary' : 'text-rose-600'} text-balance-display`}>
             {balance >= 0 ? '+' : '-'}{formatAmount(balance)}
           </div>
           <p className="text-xs text-muted-foreground">

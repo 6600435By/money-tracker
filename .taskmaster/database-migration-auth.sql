@@ -16,27 +16,38 @@ CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+-- Функция is_admin() обходит RLS и не вызывает рекурсию в политиках
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE user_id = auth.uid() AND role = 'admin'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon;
+
 DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
-CREATE POLICY "Users can read own profile" ON profiles
-  FOR SELECT USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Admins can read all profiles" ON profiles;
-CREATE POLICY "Admins can read all profiles" ON profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
-
 DROP POLICY IF EXISTS "Admins can update profiles" ON profiles;
-CREATE POLICY "Admins can update profiles" ON profiles
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+DROP POLICY IF EXISTS "Profiles select" ON profiles;
+DROP POLICY IF EXISTS "Profiles update" ON profiles;
+
+CREATE POLICY "Profiles select" ON profiles
+  FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Users can insert own profile" ON profiles
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Profiles update" ON profiles
+  FOR UPDATE USING (public.is_admin());
 
 -- 2. Триггер автоматического создания профиля
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

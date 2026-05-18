@@ -1,30 +1,43 @@
 import Link from 'next/link'
 import { getUserProfile, signOut } from '@/app/actions/auth'
+import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 
 export default async function NavBar() {
-  const profile = await getUserProfile()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!profile) return null
+  if (!user) return null
+
+  const profile = await getUserProfile()
+  const email = profile?.email ?? user.email ?? ''
+  const isAdmin = profile?.role === 'admin'
 
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link href="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
+    <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+        <Link href="/" className="text-lg font-semibold tracking-tight text-foreground hover:text-foreground/80 transition-colors">
           Money Tracker
         </Link>
         <div className="flex items-center gap-4">
-          {profile.role === 'admin' && (
+          {isAdmin && (
             <Link
               href="/admin"
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
             >
               Админ-панель
             </Link>
           )}
-          <span className="text-sm text-gray-600 hidden sm:inline">{profile.email}</span>
+          <span className="text-sm text-muted-foreground hidden sm:inline">{email}</span>
+          {!profile && (
+            <span className="text-xs text-amber-600 hidden md:inline">
+              Профиль не загружен
+            </span>
+          )}
           <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
+            <Button type="submit" variant="ghost" size="sm">
               Выйти
             </Button>
           </form>

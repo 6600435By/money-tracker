@@ -1,4 +1,13 @@
 import UserActions from './user-actions'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type { Profile } from '@/lib/types'
 
 interface UsersTableProps {
@@ -9,73 +18,77 @@ interface UsersTableProps {
 function RoleBadge({ role }: { role: Profile['role'] }) {
   if (role === 'admin') {
     return (
-      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+      <Badge variant="default" className="bg-primary text-primary-foreground">
         Админ
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+    <Badge variant="secondary">
       Пользователь
-    </span>
+    </Badge>
   )
 }
 
 function StatusBadge({ status }: { status: Profile['status'] }) {
   if (status === 'blocked') {
     return (
-      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+      <Badge variant="destructive">
         Заблокирован
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+    <Badge variant="outline" className="text-emerald-600 border-emerald-200">
       Активен
-    </span>
+    </Badge>
   )
 }
 
 export default function UsersTable({ users, currentUserId }: UsersTableProps) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Email</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Роль</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Статус</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Дата регистрации</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Действия</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Email</TableHead>
+            <TableHead>Роль</TableHead>
+            <TableHead>Статус</TableHead>
+            <TableHead>Дата регистрации</TableHead>
+            <TableHead>Действия</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users.map((user) => (
-            <tr key={user.user_id} className="border-b border-gray-100 last:border-0">
-              <td className="px-4 py-3 text-gray-900">{user.email}</td>
-              <td className="px-4 py-3">
+            <TableRow key={user.user_id}>
+              <TableCell className="font-medium">{user.email}</TableCell>
+              <TableCell>
                 <RoleBadge role={user.role} />
-              </td>
-              <td className="px-4 py-3">
+              </TableCell>
+              <TableCell>
                 <StatusBadge status={user.status} />
-              </td>
-              <td className="px-4 py-3 text-gray-600">
+              </TableCell>
+              <TableCell className="text-muted-foreground">
                 {new Date(user.created_at).toLocaleDateString('ru-RU', {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
                 })}
-              </td>
-              <td className="px-4 py-3">
+              </TableCell>
+              <TableCell>
                 <UserActions user={user} currentUserId={currentUserId} />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-      {users.length === 0 && (
-        <p className="px-4 py-8 text-center text-gray-500">Пользователей пока нет</p>
-      )}
+          {users.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                Пользователей пока нет
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   )
 }

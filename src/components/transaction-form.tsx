@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CATEGORIES, CreateTransactionData } from '@/lib/types'
 
 const transactionSchema = z.object({
@@ -74,43 +76,40 @@ export default function TransactionForm({ initialData, onSubmit, onCancel }: Tra
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Тип *
-            </label>
-            <div className="flex space-x-4">
-              <label className="flex items-center">
+          <div className="space-y-2">
+            <Label>Тип *</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
                   name="type"
                   value="income"
                   checked={formData.type === 'income'}
                   onChange={(e) => handleChange('type', e.target.value)}
-                  className="mr-2"
+                  className="accent-primary"
                 />
-                <span className="text-green-600">Доход</span>
+                <span className="text-emerald-600 font-medium">Доход</span>
               </label>
-              <label className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
                   name="type"
                   value="expense"
                   checked={formData.type === 'expense'}
                   onChange={(e) => handleChange('type', e.target.value)}
-                  className="mr-2"
+                  className="accent-primary"
                 />
-                <span className="text-red-600">Расход</span>
+                <span className="text-rose-600 font-medium">Расход</span>
               </label>
             </div>
-            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+            {errors.type && <p className="text-destructive text-sm">{errors.type}</p>}
           </div>
 
           {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Сумма *
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="amount">Сумма *</Label>
             <Input
+              id="amount"
               type="number"
               min="1"
               step="0.01"
@@ -118,63 +117,58 @@ export default function TransactionForm({ initialData, onSubmit, onCancel }: Tra
               onChange={(e) => setAmountInput(e.target.value)}
               placeholder="0.00"
             />
-            {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
+            {errors.amount && <p className="text-destructive text-sm">{errors.amount}</p>}
           </div>
 
           {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Категория *
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => handleChange('category', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {CATEGORIES.map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+          <div className="space-y-2">
+            <Label htmlFor="category">Категория *</Label>
+            <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Выберите категорию" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.category && <p className="text-destructive text-sm">{errors.category}</p>}
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Описание (необязательно)
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="description">Описание (необязательно)</Label>
             <textarea
+              id="description"
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               maxLength={280}
               rows={3}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
               placeholder="Добавьте описание..."
             />
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-muted-foreground text-xs">
               {formData.description?.length || 0}/280 символов
             </p>
-            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+            {errors.description && <p className="text-destructive text-sm">{errors.description}</p>}
           </div>
 
           {/* Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Дата *
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="date">Дата *</Label>
             <Input
+              id="date"
               type="date"
               value={formData.date}
               onChange={(e) => handleChange('date', e.target.value)}
             />
-            {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
+            {errors.date && <p className="text-destructive text-sm">{errors.date}</p>}
           </div>
 
           {/* Buttons */}
-          <div className="flex space-x-4">
-            <Button type="submit" className="bg-green-600 hover:bg-green-700">
+          <div className="flex gap-3 pt-2">
+            <Button type="submit">
               {initialData ? 'Сохранить' : 'Добавить'}
             </Button>
             {onCancel && (

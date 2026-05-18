@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { blockUser, unblockUser, deleteUser } from '@/app/actions/admin'
 import { Button } from '@/components/ui/button'
 import type { Profile } from '@/lib/types'
@@ -11,6 +12,7 @@ interface UserActionsProps {
 }
 
 export default function UserActions({ user, currentUserId }: UserActionsProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +27,7 @@ export default function UserActions({ user, currentUserId }: UserActionsProps) {
     try {
       await action()
       setConfirmDelete(false)
+      router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка')
     } finally {

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { getOrCreateProfile } from '@/lib/profile'
 import type { Profile } from '@/lib/types'
 
 const signInSchema = z.object({
@@ -23,20 +24,7 @@ const signUpSchema = z
   })
 
 export async function getUserProfile(): Promise<Profile | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
-
-  return profile as Profile | null
+  return getOrCreateProfile()
 }
 
 export async function signIn(formData: FormData) {

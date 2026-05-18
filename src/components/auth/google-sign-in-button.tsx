@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function GoogleSignInButton() {
   const [loading, setLoading] = useState(false)
@@ -34,14 +35,15 @@ export default function GoogleSignInButton() {
         className="w-full"
         onClick={handleGoogleSignIn}
         disabled={loading}
+        aria-label="Войти через Google"
       >
         <GoogleIcon />
         {loading ? 'Перенаправление…' : 'Продолжить с Google'}
       </Button>
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
     </div>
   )
@@ -49,7 +51,7 @@ export default function GoogleSignInButton() {
 
 function GoogleIcon() {
   return (
-    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden>
+    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
