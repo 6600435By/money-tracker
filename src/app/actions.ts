@@ -9,17 +9,42 @@ const transactionSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.number().min(1),
   category: z.string().min(1),
-  description: z.string().max(280).optional(),
-  date: z.string().min(1)
+  description: z
+    .string()
+    .max(280)
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  date: z.string().min(1),
 })
 
-export async function getTransactions(): Promise<Transaction[]> {
+type ActionResult = { success: true } | { error: string }
+
+function mapDbError(message: string): string {
+  if (message.includes("user_id") && message.includes('schema cache')) {
+    return 'Выполните SQL-миграцию в Supabase: .taskmaster/database-migration-auth.sql'
+  }
+  if (message.includes('row-level security')) {
+    return 'Нет доступа к данным. Проверьте RLS-политики в Supabase.'
+  }
+  return 'Не удалось сохранить транзакцию'
+}
+
+export async function getTransactions(filters?: { type?: string; category?: string }): Promise<Transaction[]> {
   try {
     const supabase = await createClient()
-    const { data, error } = await supabase
+    let query = supabase
       .from('transactions')
       .select('*')
       .order('date', { ascending: false })
+
+    if (filters?.type) {
+      query = query.eq('type', filters.type)
+    }
+    if (filters?.category) {
+      query = query.eq('category', filters.category)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching transactions:', error)
@@ -33,36 +58,50 @@ export async function getTransactions(): Promise<Transaction[]> {
   }
 }
 
-export async function addTransaction(data: CreateTransactionData) {
+export async function addTransaction(
+  data: CreateTransactionData
+): Promise<ActionResult> {
   try {
-    // Validate data
     const validatedData = transactionSchema.parse(data)
-    
     const supabase = await createClient()
-    const { error } = await supabase
-      .from('transactions')
-      .insert([validatedData])
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const row = { ...validatedData, ...(user ? { user_id: user.id } : {}) }
+
+    let { error } = await supabase.from('transactions').insert([row])
+
+    // Схема без миграции auth: колонки user_id ещё нет
+    if (error?.message?.includes('user_id')) {
+      const { type, amount, category, description, date } = validatedData
+      ;({ error } = await supabase
+        .from('transactions')
+        .insert([{ type, amount, category, description, date }]))
+    }
 
     if (error) {
       console.error('Error adding transaction:', error)
-      throw new Error('Failed to add transaction')
+      return { error: mapDbError(error.message) }
     }
 
-    // Revalidate the home page to show the new transaction
     revalidatePath('/')
-    
     return { success: true }
   } catch (error) {
     console.error('Server error adding transaction:', error)
-    throw new Error('Failed to add transaction')
+    if (error instanceof z.ZodError) {
+      return { error: error.issues[0]?.message ?? 'Неверные данные' }
+    }
+    return { error: 'Не удалось добавить транзакцию' }
   }
 }
 
-export async function updateTransaction(id: string, data: Partial<CreateTransactionData>) {
+export async function updateTransaction(
+  id: string,
+  data: Partial<CreateTransactionData>
+): Promise<ActionResult> {
   try {
-    // Validate data
     const validatedData = transactionSchema.partial().parse(data)
-    
     const supabase = await createClient()
     const { error } = await supabase
       .from('transactions')
@@ -71,38 +110,31 @@ export async function updateTransaction(id: string, data: Partial<CreateTransact
 
     if (error) {
       console.error('Error updating transaction:', error)
-      throw new Error('Failed to update transaction')
+      return { error: mapDbError(error.message) }
     }
 
-    // Revalidate the home page to show the updated transaction
     revalidatePath('/')
-    
     return { success: true }
   } catch (error) {
     console.error('Server error updating transaction:', error)
-    throw new Error('Failed to update transaction')
+    return { error: 'Не удалось обновить транзакцию' }
   }
 }
 
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(id: string): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('transactions').delete().eq('id', id)
 
     if (error) {
       console.error('Error deleting transaction:', error)
-      throw new Error('Failed to delete transaction')
+      return { error: mapDbError(error.message) }
     }
 
-    // Revalidate the home page to show the updated transaction list
     revalidatePath('/')
-    
     return { success: true }
   } catch (error) {
     console.error('Server error deleting transaction:', error)
-    throw new Error('Failed to delete transaction')
+    return { error: 'Не удалось удалить транзакцию' }
   }
 }

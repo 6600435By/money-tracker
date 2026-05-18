@@ -24,19 +24,28 @@ interface TransactionFormProps {
 export default function TransactionForm({ initialData, onSubmit, onCancel }: TransactionFormProps) {
   const [formData, setFormData] = useState<CreateTransactionData>({
     type: initialData?.type || 'expense',
-    amount: initialData?.amount || 0,
+    amount: initialData?.amount ?? 0,
     category: initialData?.category || CATEGORIES[0],
     description: initialData?.description || '',
-    date: initialData?.date || new Date().toISOString().split('T')[0]
+    date: initialData?.date || new Date().toISOString().split('T')[0],
   })
+  const [amountInput, setAmountInput] = useState(
+    initialData?.amount ? String(initialData.amount) : ''
+  )
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const validateForm = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const amount = parseFloat(amountInput.replace(',', '.'))
+    const payload = { ...formData, amount }
+
     try {
-      transactionSchema.parse(formData)
+      transactionSchema.parse(payload)
       setErrors({})
-      return true
+      setFormData(payload)
+      onSubmit(payload)
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {}
@@ -45,15 +54,6 @@ export default function TransactionForm({ initialData, onSubmit, onCancel }: Tra
         })
         setErrors(newErrors)
       }
-      return false
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (validateForm()) {
-      onSubmit(formData)
     }
   }
 
@@ -114,8 +114,8 @@ export default function TransactionForm({ initialData, onSubmit, onCancel }: Tra
               type="number"
               min="1"
               step="0.01"
-              value={formData.amount}
-              onChange={(e) => handleChange('amount', e.target.value)}
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
               placeholder="0.00"
             />
             {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}

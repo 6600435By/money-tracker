@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value)
           })
           supabaseResponse = NextResponse.next({
@@ -33,29 +33,51 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: DO NOT REMOVE auth.refreshCookie() call
-  // This refreshes the user's session and ensures they don't get logged out
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // You can add auth protection here if needed
-  // if (!user && request.nextUrl.pathname.startsWith('/protected')) {
-  //   return NextResponse.redirect(new URL('/login', request.url))
-  // }
+  const { pathname } = request.nextUrl
+  const isAuthRoute = pathname.startsWith('/auth/')
+  const isOAuthCallback = pathname === '/auth/callback'
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, status')
+      .eq('user_id', user.id)
+      .single()
+
+    if (profile?.status === 'blocked') {
+      await supabase.auth.signOut()
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      url.searchParams.set('blocked', '1')
+      return NextResponse.redirect(url)
+    }
+
+    if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+
+    if (isAuthRoute && !isOAuthCallback) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+  } else if (!isAuthRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/login'
+    return NextResponse.redirect(url)
+  }
 
   return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
