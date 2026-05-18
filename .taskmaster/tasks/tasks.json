@@ -1,0 +1,223 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup проекта Next.js 16 с TypeScript",
+        "description": "Создать Next.js 16 проект с TypeScript, установить зависимости, настроить базовую структуру папок (src/app, src/components, src/lib).",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "Проект уже создан и работает. Зависимости установлены, структура папок на месте.",
+        "testStrategy": "Запуск dev-сервера, проверка что страница открывается на localhost:3000"
+      },
+      {
+        "id": 2,
+        "title": "Настройка стилей: Tailwind CSS 4 и shadcn/ui",
+        "description": "Установить и настроить Tailwind CSS 4, shadcn/ui компоненты (Button, Card, Input), настроить globals.css.",
+        "status": "done",
+        "dependencies": [1],
+        "priority": "high",
+        "details": "Tailwind CSS 4, shadcn/ui компоненты Button/Card/Input уже установлены и используются.",
+        "testStrategy": "Проверка что стили применяются, компоненты рендерятся корректно"
+      },
+      {
+        "id": 3,
+        "title": "Настройка Supabase: клиенты client/server",
+        "description": "Установить @supabase/ssr, создать browser клиент (lib/supabase/client.ts) и server клиент (lib/supabase/server.ts). Настроить .env.local с URL и ANON_KEY.",
+        "status": "done",
+        "dependencies": [1],
+        "priority": "high",
+        "details": "Оба клиента созданы. .env.local содержит NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+        "testStrategy": "Импорт клиентов без ошибок, подключение к Supabase"
+      },
+      {
+        "id": 4,
+        "title": "База данных: таблица transactions + RLS",
+        "description": "Создать таблицу transactions в Supabase (id, amount, type, category, description, date, created_at). Включить RLS политики (открытые для учебного проекта). Добавить 5 тестовых записей.",
+        "status": "done",
+        "dependencies": [3],
+        "priority": "high",
+        "details": "SQL-скрипт в .taskmaster/database-schema.sql. Текущие RLS политики открытые (USING true) — будут заменены на auth.uid() = user_id в задаче 14.",
+        "testStrategy": "Выполнить SQL в Supabase SQL Editor, проверить что данные доступны"
+      },
+      {
+        "id": 5,
+        "title": "TypeScript типы для транзакций",
+        "description": "Создать lib/types.ts: интерфейсы Transaction, CreateTransactionData, UpdateTransactionData, константа CATEGORIES.",
+        "status": "done",
+        "dependencies": [1],
+        "priority": "high",
+        "details": "Типы определены в src/lib/types.ts. CATEGORIES = ['Зарплата','Фриланс','Еда','Транспорт','Развлечения','Прочее'].",
+        "testStrategy": "TypeScript компиляция без ошибок"
+      },
+      {
+        "id": 6,
+        "title": "Middleware: обновление сессии Supabase",
+        "description": "Создать middleware.ts с updateSession паттерном через createServerClient. Обновлять сессию пользователя на каждом запросе. Matcher: все пути кроме _next/static, _next/image, favicon.ico.",
+        "status": "done",
+        "dependencies": [3],
+        "priority": "high",
+        "details": "Middleware создан в src/middleware.ts. Сессия обновляется через supabase.auth.getUser(). Защита роутов пока закомментирована — будет добавлена в задаче 13.",
+        "testStrategy": "Сессия обновляется при каждом запросе, cookies устанавливаются корректно"
+      },
+      {
+        "id": 7,
+        "title": "Основная страница: таблица транзакций + цветовая индикация",
+        "description": "Создать app/page.tsx с таблицей транзакций, цветовой индикацией (зелёный/красный), обработкой пустого состояния.",
+        "status": "done",
+        "dependencies": [4, 5],
+        "priority": "high",
+        "details": "Страница работает: таблица, цветовая индикация, пустое состояние с подсказкой о настройке БД.",
+        "testStrategy": "Отображение транзакций, цвета доход/расход, пустое состояние"
+      },
+      {
+        "id": 8,
+        "title": "Компонент баланса: доходы, расходы, нетто",
+        "description": "Создать components/balance-summary.tsx — три карточки: общие доходы, общие расходы, нетто-баланс. Форматирование чисел с разделителями тысяч.",
+        "status": "done",
+        "dependencies": [5],
+        "priority": "high",
+        "details": "Компонент создан и работает на главной странице.",
+        "testStrategy": "Карточки отображают корректные суммы"
+      },
+      {
+        "id": 9,
+        "title": "Форма транзакции: создание и редактирование",
+        "description": "Создать components/transaction-form.tsx с полями: тип, сумма, категория, описание, дата. Валидация через zod. Режимы создания и редактирования.",
+        "status": "done",
+        "dependencies": [5, 2],
+        "priority": "high",
+        "details": "Форма создана. Поддерживает создание и редактирование через initialData prop. Zod-валидация на клиенте.",
+        "testStrategy": "Создание и редактирование транзакции через форму"
+      },
+      {
+        "id": 10,
+        "title": "Server Actions: CRUD транзакций",
+        "description": "Создать app/actions.ts: getTransactions, addTransaction, updateTransaction, deleteTransaction. Валидация через zod. revalidatePath('/') после изменений.",
+        "status": "done",
+        "dependencies": [3, 5],
+        "priority": "high",
+        "details": "Все CRUD-действия реализованы в src/app/actions.ts. Zod-валидация, revalidatePath.",
+        "testStrategy": "CRUD-операции работают корректно через Server Actions"
+      },
+      {
+        "id": 11,
+        "title": "Включить Email-провайдер в Supabase",
+        "description": "В дашборде Supabase (Authentication → Providers) убедиться, что Email провайдер включён. Проверить настройки: Confirm email включён (для регистрации), настроить Site URL и Redirect URLs для localhost:3000.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "Это конфигурационная задача в Supabase Dashboard. Нужно:\n1. Зайти в Authentication → Providers → Email\n2. Убедиться что Enable Email Signup = ON\n3. Включить Confirm email если нужна верификация\n4. В Authentication → URL Configuration указать Site URL = http://localhost:3000\n5. Добавить Redirect URLs: http://localhost:3000/**",
+        "testStrategy": "Ручная проверка в Supabase Dashboard что Email провайдер активен"
+      },
+      {
+        "id": 12,
+        "title": "Создать Server Actions для аутентификации (signUp, signIn, signOut)",
+        "description": "Создать src/app/actions/auth.ts с Server Actions: signUp, signIn, signOut + getUserProfile. Валидация через zod. Проверка блокировки при входе.",
+        "status": "done",
+        "dependencies": [3],
+        "priority": "high",
+        "details": "Файл: src/app/actions/auth.ts\n- signUp: принимает email и password, вызывает supabase.auth.signUp(), возвращает ошибку если есть\n- signIn: принимает email и password, вызывает supabase.auth.signInWithPassword(), при успехе redirect('/'), при ошибке — сообщение\n- signOut: вызывает supabase.auth.signOut(), redirect('/login')\n- Zod-схемы для валидации email и пароля\n- Использовать createClient из @/lib/supabase/server\n- ВАЖНО: user_id всегда из серверной сессии, никогда из формы",
+        "testStrategy": "Вызов Server Actions из форм логина/регистрации, проверка редиректов и ошибок"
+      },
+      {
+        "id": 13,
+        "title": "Защита страниц через middleware + проверка ролей",
+        "description": "Обновить src/middleware.ts: редирект незалогиненных на /auth/login, проверка блокировки, проверка роли admin для /admin, редирект залогиненных с /auth/* на /",
+        "status": "done",
+        "dependencies": [6],
+        "priority": "high",
+        "details": "В src/middleware.ts раскомментировать и доработать блок защиты:\n- Проверка supabase.auth.getUser()\n- Если !user и путь НЕ /login, НЕ /register, НЕ /auth/callback, НЕ _next — редирект на /login\n- Если user и путь /login или /register — редирект на /\n- Страницы /login и /register доступны анонимам\n- Auth callback роут доступен без авторизации",
+        "testStrategy": "Аноним → редирект на /login. Залогиненный → /login редиректит на /. Auth callback доступен."
+      },
+      {
+        "id": 14,
+        "title": "Добавить user_id в transactions, переписать RLS + profiles таблица",
+        "description": "Добавить user_id в transactions, переписать RLS-политики. Создать таблицу profiles с ролями и триггер handle_new_user. SQL миграция: .taskmaster/database-migration-auth.sql",
+        "status": "done",
+        "dependencies": [4, 12],
+        "priority": "high",
+        "details": "SQL для миграции:\n1. ALTER TABLE transactions ADD COLUMN user_id UUID REFERENCES auth.users(id);\n2. DROP существующих политик (Allow read/insert/update/delete access)\n3. CREATE POLICY с USING (auth.uid() = user_id) для SELECT/INSERT/UPDATE/DELETE\n4. Для INSERT: WITH CHECK (auth.uid() = user_id)\n\nОбновить src/lib/types.ts:\n- Добавить user_id в Transaction\n- CreateTransactionData не должен содержать user_id (он берётся из сессии)\n\nОбновить src/app/actions.ts:\n- addTransaction: получать user_id из supabase.auth.getUser(), подставлять в insert\n- getTransactions: фильтрация по user_id будет автоматической через RLS\n- updateTransaction/deleteTransaction: аналогично, RLS ограничит доступ",
+        "testStrategy": "Пользователь видит только свои транзакции. Попытка доступа к чужим данным возвращает пустой результат. INSERT с чужим user_id отклоняется."
+      },
+      {
+        "id": 15,
+        "title": "Страница регистрации /auth/register + форма",
+        "description": "Создать страницу /auth/register и компонент register-form.tsx. Zod-валидация, подтверждение пароля, сообщение «Проверьте почту».",
+        "status": "done",
+        "dependencies": [12, 2],
+        "priority": "high",
+        "details": "Файлы:\n- src/app/(auth)/register/page.tsx — серверный компонент, рендерит RegisterForm\n- src/components/auth/register-form.tsx — клиентский компонент с формой\n\nФорма содержит:\n- Email (input type=email, обязательное)\n- Пароль (input type=password, min 8 символов)\n- Подтверждение пароля (input type=password, должно совпадать)\n- Кнопка «Зарегистрироваться»\n- Ссылка «Уже есть аккаунт? Войти» → /login\n- Состояние: success = «Проверьте почту для подтверждения»\n- Состояние: error = сообщение об ошибке под формой\n\nZod-схема:\n- email: z.string().email()\n- password: z.string().min(8)\n- confirmPassword: z.string().min(8)\n- refine: password === confirmPassword",
+        "testStrategy": "Форма валидирует email, длину пароля, совпадение паролей. Успешная регистрация показывает «Проверьте почту». Ошибка — сообщение."
+      },
+      {
+        "id": 16,
+        "title": "Страница входа /auth/login + форма + NavBar с выходом",
+        "description": "Создать страницу /auth/login, форму login-form.tsx, NavBar с email, ссылкой на админ-панель, кнопкой «Выйти».",
+        "status": "done",
+        "dependencies": [12, 2],
+        "priority": "high",
+        "details": "Файлы:\n- src/app/(auth)/login/page.tsx — серверный компонент, рендерит LoginForm\n- src/components/auth/login-form.tsx — клиентский компонент с формой\n\nФорма содержит:\n- Email (input type=email, обязательное)\n- Пароль (input type=password)\n- Кнопка «Войти»\n- Ссылка «Нет аккаунта? Зарегистрироваться» → /register\n- Состояние: error = сообщение об ошибке под формой\n\nКнопка «Выйти»:\n- Добавить в шапку главной страницы (src/app/page.tsx)\n- Вызывает signOut Server Action\n- Доступна только залогиненному пользователю",
+        "testStrategy": "Успешный вход редиректит на /. Неверный пароль показывает ошибку. Кнопка «Выйти» разлогинивает."
+      },
+      {
+        "id": 17,
+        "title": "Social Login: Google и GitHub + OAuth callback",
+        "description": "OAuth callback route создан. Требуется: кнопки Google/GitHub, настройка провайдеров в Supabase Dashboard.",
+        "status": "pending",
+        "dependencies": [3, 15, 16],
+        "priority": "medium",
+        "details": "Файлы:\n- src/components/auth/social-buttons.tsx — кнопки Google/GitHub\n- src/app/auth/callback/route.ts — обработка OAuth callback\n\nSocial Login:\n- Вызов supabase.auth.signInWithOAuth({ provider: 'google' | 'github' })\n- Опции: redirectTo = `${origin}/auth/callback`\n- Использовать createClient из @/lib/supabase/client (браузерный)\n\nCallback route:\n- GET handler\n- Обменять code на сессию через supabase.auth.exchangeCodeForSession(code)\n- Редирект на /\n\nПредварительная настройка в Supabase Dashboard:\n- Authentication → Providers → Google: включить, указать Client ID и Secret\n- Authentication → Providers → GitHub: включить, указать Client ID и Secret\n- Добавить callback URL в настройки OAuth-приложений Google/GitHub",
+        "testStrategy": "Клик по кнопке Google/GitHub → редирект на OAuth → возврат на / с залогиненным пользователем"
+      },
+      {
+        "id": 18,
+        "title": "Фильтрация транзакций по типу и категории",
+        "description": "Добавить кнопки фильтров над таблицей транзакций. Фильтровать по типу (доход/расход) и категории. Использовать URL search params для сохранения состояния фильтра.",
+        "status": "pending",
+        "dependencies": [7],
+        "priority": "low",
+        "details": "Добавить в page.tsx или в отдельный компонент:\n- Кнопки-фильтры: Все / Доходы / Расходы\n- Dropdown для фильтрации по категории\n- URL search params: ?type=income&category=Еда\n- Фильтровать запросы к Supabase через .eq() или .in()",
+        "testStrategy": "Фильтры корректно отображают подмножество транзакций, URL обновляется"
+      },
+      {
+        "id": 19,
+        "title": "Админ-панель: Server Actions (getUsers, blockUser, unblockUser, deleteUser)",
+        "description": "Создать src/app/actions/admin.ts с Server Actions для управления пользователями. Проверка роли admin, защита от само-блокировки/удаления.",
+        "status": "done",
+        "dependencies": [12],
+        "priority": "high",
+        "details": "Файл: src/app/actions/admin.ts\n- verifyAdmin() — внутренняя функция проверки роли\n- getUsers() — список всех пользователей (только admin)\n- blockUser(userId) — установка status=blocked\n- unblockUser(userId) — установка status=active\n- deleteUser(userId) — удаление auth user + profile + transactions\n- Защита: нельзя заблокировать/удалить себя",
+        "testStrategy": "Админ может блокировать/разблокировать/удалять пользователей. Обычный пользователь не имеет доступа."
+      },
+      {
+        "id": 20,
+        "title": "Админ-панель: страница /admin + компоненты users-table и user-actions",
+        "description": "Создать страницу /admin, компоненты users-table.tsx и user-actions.tsx. Таблица пользователей с бейджами ролей и статусов, кнопки действий, подтверждение удаления.",
+        "status": "done",
+        "dependencies": [19],
+        "priority": "high",
+        "details": "Файлы:\n- src/app/admin/page.tsx — страница админ-панели\n- src/components/admin/users-table.tsx — таблица пользователей\n- src/components/admin/user-actions.tsx — кнопки действий\n\nUI:\n- Бейджи: Админ (синий), Пользователь (серый), Активен (зелёный), Заблокирован (красный)\n- Кнопки: Заблокировать (жёлтая), Разблокировать (зелёная), Удалить (красная)\n- Подтверждение удаления через 2 клика\n- Строка текущего админа не имеет кнопок",
+        "testStrategy": "Админ видит список пользователей, может блокировать/разблокировать/удалять. Кнопки защищены от само-действия."
+      },
+      {
+        "id": 21,
+        "title": "Выполнить SQL миграцию в Supabase и назначить первого администратора",
+        "description": "Выполнить .taskmaster/database-migration-auth.sql в Supabase SQL Editor. После регистрации первого пользователя — назначить его админом через SQL.",
+        "status": "pending",
+        "dependencies": [11],
+        "priority": "high",
+        "details": "1. Открыть Supabase SQL Editor\n2. Выполнить скрипт из .taskmaster/database-migration-auth.sql\n3. Зарегистрировать первого пользователя через /auth/register\n4. Выполнить: UPDATE profiles SET role = 'admin' WHERE email = 'ВАШ_EMAIL';",
+        "testStrategy": "Таблицы profiles и transactions (с user_id) созданы. RLS политики работают. Первый пользователь — admin."
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "projectName": "Money Tracker",
+      "description": "Money Tracker — приложение учёта доходов и расходов с аутентификацией",
+      "createdAt": "2026-05-14",
+      "sourcePRDs": [".taskmaster/docs/PRD.md", ".taskmaster/docs/PRD-2.md", ".taskmaster/docs/prd-3-user-roles.md"]
+    }
+  }
+}
