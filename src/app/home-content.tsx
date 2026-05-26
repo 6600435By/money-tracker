@@ -7,33 +7,61 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Plus } from 'lucide-react'
+import ExportCsvButton from '@/components/export-csv-button'
 import BalanceSummary from '@/components/balance-summary'
+import WalletsSummary from '@/components/wallets-summary'
 import SpendingChart from '@/components/spending-chart'
 import TransactionList from '@/components/transaction-list'
 import TransactionForm from '@/components/transaction-form'
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from './actions'
-import { Transaction, CreateTransactionData, CATEGORIES } from '@/lib/types'
+import { getExchangeRates, getRatesLookup } from '@/app/actions/exchange-rates'
+import { getCategoryNames } from '@/app/actions/categories'
+import { Transaction, CreateTransactionData } from '@/lib/types'
+import type { CurrencyCode, ExchangeRates, NbrbRate } from '@/lib/currency'
+import { createBynRate, CURRENCIES } from '@/lib/currency'
 
-export default function HomeContent() {
+interface HomeContentProps {
+  showPaidFeatures?: boolean
+}
+
+export default function HomeContent({
+  showPaidFeatures = false,
+}: HomeContentProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [todayRates, setTodayRates] = useState<ExchangeRates | null>(null)
+  const [ratesLookup, setRatesLookup] = useState<Record<string, NbrbRate>>({})
   const [showForm, setShowForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [loading, setLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [filterCategories, setFilterCategories] = useState<string[]>([])
 
   const typeFilter = searchParams.get('type') || ''
   const categoryFilter = searchParams.get('category') || ''
+  const walletFilter = (searchParams.get('wallet') || '') as CurrencyCode | ''
 
-  // Fetch transactions on component mount and when filters change
   useEffect(() => {
     loadTransactions()
-  }, [typeFilter, categoryFilter])
+  }, [typeFilter, categoryFilter, walletFilter])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const type =
+        typeFilter === 'income' || typeFilter === 'expense'
+          ? typeFilter
+          : undefined
+      const names = await getCategoryNames(type)
+      setFilterCategories(names)
+    }
+    void loadCategories()
+  }, [typeFilter])
 
   const loadTransactions = async () => {
     try {
@@ -42,12 +70,32 @@ export default function HomeContent() {
       if (categoryFilter) filters.category = categoryFilter
 
       const data = await getTransactions(filters)
-      setTransactions(data)
+      setAllTransactions(data)
+      const displayed = walletFilter
+        ? data.filter((t) => (t.currency ?? 'BYN') === walletFilter)
+        : data
+      setTransactions(displayed)
+
+      const rates = await getExchangeRates()
+      setTodayRates(rates)
+      const lookup = await getRatesLookup(
+        data.map((t) => ({ currency: t.currency ?? 'BYN', date: t.date }))
+      )
+      setRatesLookup(lookup)
     } catch (error) {
       console.error('Failed to load transactions:', error)
+      setAllTransactions([])
       setTransactions([])
     }
   }
+
+  const fallbackRates: ExchangeRates =
+    todayRates ?? {
+      BYN: createBynRate(new Date().toISOString()),
+      USD: { code: 'USD', scale: 1, officialRate: 0, date: '' },
+      EUR: { code: 'EUR', scale: 1, officialRate: 0, date: '' },
+      RUB: { code: 'RUB', scale: 100, officialRate: 0, date: '' },
+    }
 
   const updateFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams)
@@ -148,7 +196,10 @@ export default function HomeContent() {
                 setShowForm(false)
                 setEditingTransaction(null)
               }}
-              initialData={editingTransaction || undefined}
+              initialData={
+                editingTransaction ||
+                (walletFilter ? { currency: walletFilter } : undefined)
+              }
             />
           </div>
         )}
@@ -179,19 +230,19 @@ export default function HomeContent() {
             </Button>
           </div>
 
-          <Select value={categoryFilter} onValueChange={(value) => updateFilter('category', value)}>
+          <Select value={categoryFilter} onValueChange={(value) => updateFilter('category', value ?? '')}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Все категории" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Все категории</SelectItem>
-              {CATEGORIES.map((cat) => (
+              {filterCategories.map((cat) => (
                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          {(typeFilter || categoryFilter) && (
+          {(typeFilter || categoryFilter || walletFilter) && (
             <Button
               variant="ghost"
               size="sm"
@@ -201,12 +252,41 @@ export default function HomeContent() {
               Сбросить фильтры
             </Button>
           )}
+          {walletFilter && CURRENCIES[walletFilter] && (
+            <span className="text-sm text-muted-foreground">
+              Кошелёк: {CURRENCIES[walletFilter].label}
+            </span>
+          )}
+
+          {showPaidFeatures && (
+            <ExportCsvButton
+              filters={{
+                type: typeFilter || undefined,
+                category: categoryFilter || undefined,
+                currency: walletFilter || undefined,
+              }}
+              disabled={loading || allTransactions.length === 0}
+              className="ml-auto"
+            />
+          )}
         </div>
 
-        <BalanceSummary transactions={transactions} />
-        <SpendingChart transactions={transactions} />
-        <TransactionList 
-          transactions={transactions} 
+        <WalletsSummary transactions={allTransactions} />
+
+        <BalanceSummary
+          transactions={transactions}
+          ratesLookup={ratesLookup}
+          todayRates={fallbackRates}
+        />
+        <SpendingChart
+          transactions={transactions}
+          ratesLookup={ratesLookup}
+          todayRates={fallbackRates}
+        />
+        <TransactionList
+          transactions={transactions}
+          ratesLookup={ratesLookup}
+          todayRates={fallbackRates}
           onEdit={handleRowClick}
           onDelete={handleDeleteTransaction}
         />

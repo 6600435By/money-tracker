@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Profile } from '@/lib/types'
+import { loginsSinceDate } from '@/lib/user-logins'
+import type { AdminUser, Profile } from '@/lib/types'
 
 async function verifyAdmin(): Promise<{ userId: string; profile: Profile }> {
   const supabase = await createClient()
@@ -28,13 +29,6 @@ async function verifyAdmin(): Promise<{ userId: string; profile: Profile }> {
   return { userId: user.id, profile: profile as Profile }
 }
 
-export interface AdminStats {
-  total: number
-  active: number
-  blocked: number
-  admins: number
-}
-
 export async function getUsers(): Promise<Profile[]> {
   await verifyAdmin()
 
@@ -55,6 +49,43 @@ export async function getUsers(): Promise<Profile[]> {
   }
 
   return (data ?? []) as Profile[]
+}
+
+export async function getAdminUsers(): Promise<AdminUser[]> {
+  const users = await getUsers()
+  const since = loginsSinceDate(30)
+
+  let countMap = new Map<string, number>()
+
+  try {
+    const admin = createAdminClient()
+    const { data: logins, error } = await admin
+      .from('user_logins')
+      .select('user_id')
+      .gte('logged_in_at', since)
+
+    if (error) {
+      if (
+        !error.message.includes('user_logins') &&
+        error.code !== '42P01' &&
+        !error.message.includes('schema cache')
+      ) {
+        console.error('getAdminUsers logins error:', error)
+      }
+    } else {
+      for (const row of logins ?? []) {
+        const id = row.user_id as string
+        countMap.set(id, (countMap.get(id) ?? 0) + 1)
+      }
+    }
+  } catch (err) {
+    console.error('getAdminUsers logins error:', err)
+  }
+
+  return users.map((user) => ({
+    ...user,
+    logins_last_30_days: countMap.get(user.user_id) ?? 0,
+  }))
 }
 
 export async function blockUser(targetUserId: string) {

@@ -1,37 +1,31 @@
 'use client'
 
 import { useMemo } from 'react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Transaction } from '@/lib/types'
+import {
+  type ExchangeRates,
+  type NbrbRate,
+  convertToBynWithLookup,
+  formatMoney,
+} from '@/lib/currency'
 
 interface SpendingChartProps {
   transactions: Transaction[]
+  ratesLookup: Record<string, NbrbRate>
+  todayRates: ExchangeRates
 }
 
-const INCOME_COLOR = '#10b981'  // emerald-500
-const EXPENSE_COLOR = '#f43f5e' // rose-500
-
-const formatRub = (value: number) =>
-  new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: 'RUB',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-
-interface TooltipPayload {
-  name: string
-  value: number
-  payload: { color: string }
-}
+const INCOME_COLOR = '#10b981'
+const EXPENSE_COLOR = '#f43f5e'
 
 function CustomTooltip({
   active,
   payload,
 }: {
   active?: boolean
-  payload?: TooltipPayload[]
+  payload?: { name: string; value: number; payload: { color: string } }[]
 }) {
   if (!active || !payload?.length) return null
   const { name, value, payload: item } = payload[0]
@@ -40,16 +34,29 @@ function CustomTooltip({
       <span style={{ color: item.color }} className="font-medium">
         {name}
       </span>
-      <span className="ml-2 text-foreground font-semibold">{formatRub(value)}</span>
+      <span className="ml-2 font-semibold">{formatMoney(value, 'BYN')}</span>
     </div>
   )
 }
 
-export default function SpendingChart({ transactions }: SpendingChartProps) {
+export default function SpendingChart({
+  transactions,
+  ratesLookup,
+  todayRates,
+}: SpendingChartProps) {
   const { income, expenses, data } = useMemo(() => {
     const now = new Date()
     const month = now.getMonth()
     const year = now.getFullYear()
+
+    const toByn = (t: Transaction) =>
+      convertToBynWithLookup(
+        t.amount,
+        t.currency ?? 'BYN',
+        t.date,
+        ratesLookup,
+        todayRates
+      )
 
     const monthly = transactions.filter((t) => {
       const d = new Date(t.date)
@@ -58,11 +65,11 @@ export default function SpendingChart({ transactions }: SpendingChartProps) {
 
     const income = monthly
       .filter((t) => t.type === 'income')
-      .reduce((s, t) => s + t.amount, 0)
+      .reduce((s, t) => s + toByn(t), 0)
 
     const expenses = monthly
       .filter((t) => t.type === 'expense')
-      .reduce((s, t) => s + t.amount, 0)
+      .reduce((s, t) => s + toByn(t), 0)
 
     const data = [
       { name: 'Доходы', value: income, color: INCOME_COLOR },
@@ -70,14 +77,16 @@ export default function SpendingChart({ transactions }: SpendingChartProps) {
     ].filter((d) => d.value > 0)
 
     return { income, expenses, data }
-  }, [transactions])
+  }, [transactions, ratesLookup, todayRates])
 
   const hasData = income > 0 || expenses > 0
 
   return (
     <Card className="mb-8">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Доходы и расходы за месяц</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          Доходы и расходы за месяц (BYN)
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {!hasData ? (
@@ -86,7 +95,6 @@ export default function SpendingChart({ transactions }: SpendingChartProps) {
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Pie chart */}
             <div className="w-full sm:w-64 h-48 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -109,7 +117,6 @@ export default function SpendingChart({ transactions }: SpendingChartProps) {
               </ResponsiveContainer>
             </div>
 
-            {/* Legend */}
             <div className="flex flex-col gap-3 text-sm w-full">
               {income > 0 && (
                 <div className="flex items-center justify-between gap-4">
@@ -120,8 +127,8 @@ export default function SpendingChart({ transactions }: SpendingChartProps) {
                     />
                     <span className="text-muted-foreground">Доходы</span>
                   </div>
-                  <span className="font-semibold text-emerald-600 text-balance-display tabular-nums">
-                    {formatRub(income)}
+                  <span className="font-semibold text-emerald-600 tabular-nums">
+                    {formatMoney(income, 'BYN')}
                   </span>
                 </div>
               )}
@@ -134,38 +141,10 @@ export default function SpendingChart({ transactions }: SpendingChartProps) {
                     />
                     <span className="text-muted-foreground">Расходы</span>
                   </div>
-                  <span className="font-semibold text-rose-600 text-balance-display tabular-nums">
-                    {formatRub(expenses)}
+                  <span className="font-semibold text-rose-600 tabular-nums">
+                    {formatMoney(expenses, 'BYN')}
                   </span>
                 </div>
-              )}
-              {income > 0 && expenses > 0 && (
-                <>
-                  <div className="border-t border-border my-1" />
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Баланс</span>
-                    <span
-                      className={`font-semibold text-balance-display tabular-nums ${
-                        income - expenses >= 0 ? 'text-primary' : 'text-rose-600'
-                      }`}
-                    >
-                      {income - expenses >= 0 ? '+' : ''}
-                      {formatRub(income - expenses)}
-                    </span>
-                  </div>
-                  <div className="mt-1">
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>Расходы от доходов</span>
-                      <span>{Math.round((expenses / income) * 100)}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-rose-500 transition-all duration-500"
-                        style={{ width: `${Math.min((expenses / income) * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </>
               )}
             </div>
           </div>

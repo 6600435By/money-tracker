@@ -9,9 +9,17 @@ export default function MigrationNotice({ message }: { message: string }) {
       <AlertDescription className="mt-1 space-y-2">
         <p>{message}</p>
         <p className="text-sm">
-          Выполните SQL-скрипт:{' '}
+          Выполните SQL-скрипты:{' '}
           <code className="bg-destructive/10 px-1 rounded text-xs">
             .taskmaster/database-migration-auth.sql
+          </code>
+          , при необходимости{' '}
+          <code className="bg-destructive/10 px-1 rounded text-xs">
+            database-migration-subscription.sql
+          </code>{' '}
+          и{' '}
+          <code className="bg-destructive/10 px-1 rounded text-xs">
+            database-migration-admin-analytics.sql
           </code>
         </p>
       </AlertDescription>

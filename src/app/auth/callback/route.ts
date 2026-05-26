@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { recordUserLogin } from '@/lib/user-logins'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -31,6 +32,8 @@ export async function GET(request: Request) {
       await supabase.auth.signOut()
       return NextResponse.redirect(`${origin}/auth/login?blocked=1`)
     }
+
+    await recordUserLogin(user.id)
   }
 
   return NextResponse.redirect(`${origin}/`)

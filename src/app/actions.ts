@@ -3,11 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { CURRENCY_CODES } from '@/lib/currency'
 import { CreateTransactionData, Transaction } from '@/lib/types'
 
 const transactionSchema = z.object({
   type: z.enum(['income', 'expense']),
-  amount: z.number().min(1),
+  amount: z.number().min(0.01),
+  currency: z.enum(CURRENCY_CODES),
   category: z.string().min(1),
   description: z
     .string()
@@ -26,10 +28,17 @@ function mapDbError(message: string): string {
   if (message.includes('row-level security')) {
     return 'Нет доступа к данным. Проверьте RLS-политики в Supabase.'
   }
+  if (message.includes('currency')) {
+    return 'Выполните SQL-миграцию валют: .taskmaster/database-migration-currency.sql'
+  }
   return 'Не удалось сохранить транзакцию'
 }
 
-export async function getTransactions(filters?: { type?: string; category?: string }): Promise<Transaction[]> {
+export async function getTransactions(filters?: {
+  type?: string
+  category?: string
+  currency?: string
+}): Promise<Transaction[]> {
   try {
     const supabase = await createClient()
     let query = supabase
@@ -43,6 +52,9 @@ export async function getTransactions(filters?: { type?: string; category?: stri
     if (filters?.category) {
       query = query.eq('category', filters.category)
     }
+    if (filters?.currency) {
+      query = query.eq('currency', filters.currency)
+    }
 
     const { data, error } = await query
 
@@ -51,7 +63,10 @@ export async function getTransactions(filters?: { type?: string; category?: stri
       return []
     }
 
-    return data || []
+    return (data || []).map((row) => ({
+      ...row,
+      currency: row.currency ?? 'BYN',
+    })) as Transaction[]
   } catch (error) {
     console.error('Server error fetching transactions:', error)
     return []
@@ -73,11 +88,16 @@ export async function addTransaction(
     let { error } = await supabase.from('transactions').insert([row])
 
     // Схема без миграции auth: колонки user_id ещё нет
-    if (error?.message?.includes('user_id')) {
-      const { type, amount, category, description, date } = validatedData
-      ;({ error } = await supabase
-        .from('transactions')
-        .insert([{ type, amount, category, description, date }]))
+    if (error?.message?.includes('user_id') || error?.message?.includes('currency')) {
+      const { type, amount, category, description, date, currency } = validatedData
+      const legacyRow = { type, amount, category, description, date }
+      ;({ error } = await supabase.from('transactions').insert([legacyRow]))
+      if (!error && currency !== 'BYN') {
+        return {
+          error:
+            'Выполните SQL-миграцию валют: .taskmaster/database-migration-currency.sql',
+        }
+      }
     }
 
     if (error) {

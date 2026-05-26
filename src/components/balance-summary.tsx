@@ -1,39 +1,53 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Transaction } from '@/lib/types'
+import {
+  type ExchangeRates,
+  type NbrbRate,
+  convertToBynWithLookup,
+  formatMoney,
+} from '@/lib/currency'
 import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 
 interface BalanceSummaryProps {
   transactions: Transaction[]
+  ratesLookup: Record<string, NbrbRate>
+  todayRates: ExchangeRates
 }
 
-export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
+export default function BalanceSummary({
+  transactions,
+  ratesLookup,
+  todayRates,
+}: BalanceSummaryProps) {
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
 
-  const currentMonthTransactions = transactions.filter(transaction => {
+  const currentMonthTransactions = transactions.filter((transaction) => {
     const transactionDate = new Date(transaction.date)
-    return transactionDate.getMonth() === currentMonth && 
-           transactionDate.getFullYear() === currentYear
+    return (
+      transactionDate.getMonth() === currentMonth &&
+      transactionDate.getFullYear() === currentYear
+    )
   })
 
+  const toByn = (t: Transaction) =>
+    convertToBynWithLookup(
+      t.amount,
+      t.currency ?? 'BYN',
+      t.date,
+      ratesLookup,
+      todayRates
+    )
+
   const income = currentMonthTransactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + toByn(t), 0)
 
   const expenses = currentMonthTransactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + toByn(t), 0)
 
   const balance = income - expenses
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.abs(amount))
-  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -44,11 +58,9 @@ export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-emerald-600 text-balance-display">
-            {formatAmount(income)}
+            {formatMoney(income, 'BYN')}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Текущий месяц
-          </p>
+          <p className="text-xs text-muted-foreground">в пересчёте на BYN (НБ РБ)</p>
         </CardContent>
       </Card>
 
@@ -59,11 +71,9 @@ export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-rose-600 text-balance-display">
-            {formatAmount(expenses)}
+            {formatMoney(expenses, 'BYN')}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Текущий месяц
-          </p>
+          <p className="text-xs text-muted-foreground">в пересчёте на BYN (НБ РБ)</p>
         </CardContent>
       </Card>
 
@@ -73,12 +83,13 @@ export default function BalanceSummary({ transactions }: BalanceSummaryProps) {
           <Wallet className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-primary' : 'text-rose-600'} text-balance-display`}>
-            {balance >= 0 ? '+' : '-'}{formatAmount(balance)}
+          <div
+            className={`text-2xl font-bold ${balance >= 0 ? 'text-primary' : 'text-rose-600'} text-balance-display`}
+          >
+            {balance >= 0 ? '+' : '−'}
+            {formatMoney(Math.abs(balance), 'BYN')}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Доходы − расходы
-          </p>
+          <p className="text-xs text-muted-foreground">доходы − расходы (BYN)</p>
         </CardContent>
       </Card>
     </div>

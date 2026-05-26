@@ -40,6 +40,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/auth/')
   const isOAuthCallback = pathname === '/auth/callback'
+  const isStripeWebhook = pathname.startsWith('/api/webhooks/stripe')
+
+  if (isStripeWebhook) {
+    return supabaseResponse
+  }
 
   if (user) {
     const { data: profile } = await supabase

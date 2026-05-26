@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getOrCreateProfile } from '@/lib/profile'
 import type { Profile } from '@/lib/types'
+import { recordUserLogin } from '@/lib/user-logins'
 
 const signInSchema = z.object({
   email: z.string().email('Введите корректный email'),
@@ -57,6 +58,8 @@ export async function signIn(formData: FormData) {
     await supabase.auth.signOut()
     return { error: 'Ваш аккаунт заблокирован' }
   }
+
+  await recordUserLogin(data.user.id)
 
   revalidatePath('/', 'layout')
   redirect('/')

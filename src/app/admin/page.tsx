@@ -1,21 +1,13 @@
 import Link from 'next/link'
 import { getUserProfile } from '@/app/actions/auth'
-import { getUsers, type AdminStats } from '@/app/actions/admin'
+import { getAdminUsers } from '@/app/actions/admin'
+import { buildAdminStats } from '@/lib/admin-stats'
 import UsersTable from '@/components/admin/users-table'
 import AdminStatsCards from '@/components/admin/admin-stats'
 import AccessDenied from '@/components/admin/access-denied'
 import MigrationNotice from '@/components/admin/migration-notice'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
-
-function buildStats(users: Awaited<ReturnType<typeof getUsers>>): AdminStats {
-  return {
-    total: users.length,
-    active: users.filter((u) => u.status === 'active').length,
-    blocked: users.filter((u) => u.status === 'blocked').length,
-    admins: users.filter((u) => u.role === 'admin').length,
-  }
-}
 
 export default async function AdminPage() {
   const profile = await getUserProfile()
@@ -37,8 +29,8 @@ export default async function AdminPage() {
   }
 
   try {
-    const users = await getUsers()
-    const stats = buildStats(users)
+    const users = await getAdminUsers()
+    const stats = buildAdminStats(users)
 
     return (
       <AdminShell>

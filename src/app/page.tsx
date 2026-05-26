@@ -1,22 +1,34 @@
-'use client'
-
 import { Suspense } from 'react'
+import { getOrCreateProfile } from '@/lib/profile'
+import { canUsePaidFeatures } from '@/lib/subscription'
+import ExchangeRatesWidget from '@/components/exchange-rates-widget'
+import SubscriptionBanner from '@/components/subscription-banner'
 import HomeContent from './home-content'
 
-export default function Home() {
+export default async function Home() {
+  const profile = await getOrCreateProfile()
+  const showPaidFeatures = canUsePaidFeatures(profile)
+
   return (
-    <Suspense fallback={
-      <main className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="h-32 bg-gray-200 rounded mb-8"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background">
+          <div className="max-w-5xl mx-auto px-6 py-12 animate-pulse">
+            <div className="h-32 bg-muted rounded mb-8" />
+            <div className="h-64 bg-muted rounded" />
           </div>
+        </main>
+      }
+    >
+      <main className="min-h-screen bg-background">
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <Suspense fallback={null}>
+            <SubscriptionBanner />
+          </Suspense>
+          {showPaidFeatures && <ExchangeRatesWidget />}
+          <HomeContent showPaidFeatures={showPaidFeatures} />
         </div>
       </main>
-    }>
-      <HomeContent />
     </Suspense>
   )
 }
