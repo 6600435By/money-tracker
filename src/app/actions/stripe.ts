@@ -17,6 +17,7 @@ import {
   isCheckoutSessionPaid,
   mapProfileSubscriptionDbError,
   proUpdateFromStripeSubscription,
+  subscriptionCurrentPeriodEndUnix,
   type ProSubscriptionUpdate,
 } from '@/lib/stripe-subscription'
 import { hasActiveProSubscription, isAdmin } from '@/lib/subscription'
@@ -296,14 +297,16 @@ async function syncFromCheckoutSession(
     try {
       const full = await stripe.subscriptions.retrieve(sub)
       subscriptionStatus = full.status
-      periodEnd = stripePeriodEndFromUnix(full.current_period_end)
+      periodEnd = stripePeriodEndFromUnix(
+        subscriptionCurrentPeriodEndUnix(full)
+      )
     } catch {
       subscriptionStatus = 'active'
     }
   } else if (sub && typeof sub === 'object') {
     subscriptionId = sub.id
     subscriptionStatus = sub.status
-    periodEnd = stripePeriodEndFromUnix(sub.current_period_end)
+    periodEnd = stripePeriodEndFromUnix(subscriptionCurrentPeriodEndUnix(sub))
   }
 
   // Оплата прошла — активируем Pro даже если объект subscription ещё не подтянулся

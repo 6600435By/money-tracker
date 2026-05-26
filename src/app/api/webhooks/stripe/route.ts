@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { stripePeriodEndFromUnix } from '@/lib/admin-subscription'
-import { proUpdateFromStripeSubscription } from '@/lib/stripe-subscription'
+import {
+  proUpdateFromStripeSubscription,
+  subscriptionCurrentPeriodEndUnix,
+} from '@/lib/stripe-subscription'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -98,7 +101,9 @@ export async function POST(request: Request) {
           try {
             const stripe = getStripe()
             const sub = await stripe.subscriptions.retrieve(subscriptionId)
-            periodEnd = stripePeriodEndFromUnix(sub.current_period_end)
+            periodEnd = stripePeriodEndFromUnix(
+              subscriptionCurrentPeriodEndUnix(sub)
+            )
           } catch {
             periodEnd = null
           }

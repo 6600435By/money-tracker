@@ -29,6 +29,24 @@ export function mapProfileSubscriptionDbError(message: string): string {
   return message
 }
 
+/** Конец текущего периода в Unix-секундах (в актуальных типах Stripe — на subscription items). */
+export function subscriptionCurrentPeriodEndUnix(
+  subscription: Stripe.Subscription
+): number | null {
+  const items = subscription.items?.data
+  if (!items?.length) return null
+  let max: number | null = null
+  for (const item of items) {
+    if (typeof item.current_period_end === 'number') {
+      max =
+        max === null
+          ? item.current_period_end
+          : Math.max(max, item.current_period_end)
+    }
+  }
+  return max
+}
+
 export function proUpdateFromStripeSubscription(
   subscription: Stripe.Subscription,
   customerId: string
@@ -42,7 +60,7 @@ export function proUpdateFromStripeSubscription(
     plan: active ? 'pro' : 'free',
     subscription_status: subscription.status,
     subscription_period_end: stripePeriodEndFromUnix(
-      subscription.current_period_end
+      subscriptionCurrentPeriodEndUnix(subscription)
     ),
   }
 }
